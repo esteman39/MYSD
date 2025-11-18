@@ -1,0 +1,477 @@
+-------------------------------------------------------------
+-- AZULES: ESTRUCTURA Y RESTRICCIONES DECLARATIVAS
+-------------------------------------------------------------
+
+--------------------------
+-- TABLAS
+--------------------------
+
+CREATE TABLE Usuario (
+id_usuario INT NOT NULL,
+nombre VARCHAR2(150) NOT NULL,
+correo VARCHAR2(150) NOT NULL,
+contrasena VARCHAR2(200) NOT NULL,
+rol VARCHAR2(30) NOT NULL
+);
+
+CREATE TABLE Estudiante (
+id_estudiante INT NOT NULL,
+id_usuario INT NOT NULL,
+carrera VARCHAR2(100) NOT NULL,
+semestre INT NOT NULL
+);
+
+CREATE TABLE Tutor (
+id_tutor INT NOT NULL,
+id_usuario INT NOT NULL,
+experiencia VARCHAR2(200) NOT NULL,
+tarifa_hora NUMBER(10,2) NOT NULL,
+calificacion_promedio NUMBER(5,2) NOT NULL
+);
+
+CREATE TABLE Disponibilidad (
+id_disponibilidad INT NOT NULL,
+id_tutor INT NOT NULL,
+fecha DATE NOT NULL,
+hora_inicio DATE NOT NULL,
+hora_fin DATE NOT NULL,
+estado VARCHAR2(20) NOT NULL 
+);
+
+CREATE TABLE Especialidad (
+id_especialidad INT NOT NULL,
+nombre VARCHAR2(120) NOT NULL,
+descripcion VARCHAR2(300) NOT NULL
+);
+
+CREATE TABLE Materia (
+id_materia INT NOT NULL,
+nombre VARCHAR2(120) NOT NULL,
+id_especialidad INT NOT NULL
+);
+
+CREATE TABLE Reserva (
+id_reserva INT NOT NULL,
+id_estudiante INT NOT NULL,
+id_tutor INT NOT NULL,
+id_materia INT NOT NULL,
+fecha_reserva DATE NOT NULL,
+estado VARCHAR2(20) NOT NULL
+);
+
+CREATE TABLE Sesion (
+id_sesion INT NOT NULL,
+id_reserva INT NOT NULL,
+fecha_inicio DATE NOT NULL,
+fecha_fin DATE NOT NULL,
+estado VARCHAR2(20) NOT NULL
+);
+
+CREATE TABLE Pago (
+id_pago INT NOT NULL,
+id_sesion INT NOT NULL,
+monto NUMBER(12,2) NOT NULL,
+fecha_pago DATE NOT NULL,
+estado VARCHAR2(20) NOT NULL
+);
+
+CREATE TABLE Resenia (
+id_resenia INT NOT NULL,
+id_reserva INT NOT NULL,
+calificacion NUMBER(3,1) NOT NULL,
+comentario VARCHAR2(500) NOT NULL,
+fecha_resenia DATE NOT NULL
+);
+
+--------------------------
+-- RESTRICCIONES 
+--------------------------
+
+-- PRIMARY KEYS
+
+ALTER TABLE Usuario
+ADD CONSTRAINT pk_usuario PRIMARY KEY (id_usuario);
+
+ALTER TABLE Estudiante    
+ADD CONSTRAINT pk_estudiante PRIMARY KEY (id_estudiante);
+
+ALTER TABLE Tutor         
+ADD CONSTRAINT pk_tutor PRIMARY KEY (id_tutor);
+
+ALTER TABLE Disponibilidad 
+ADD CONSTRAINT pk_disponibilidad PRIMARY KEY (id_disponibilidad);
+
+ALTER TABLE Especialidad  
+ADD CONSTRAINT pk_especialidad PRIMARY KEY (id_especialidad);
+
+ALTER TABLE Materia       
+ADD CONSTRAINT pk_materia PRIMARY KEY (id_materia);
+
+ALTER TABLE Reserva       
+ADD CONSTRAINT pk_reserva PRIMARY KEY (id_reserva);
+
+ALTER TABLE Sesion        
+ADD CONSTRAINT pk_sesion PRIMARY KEY (id_sesion);
+
+ALTER TABLE Pago          
+ADD CONSTRAINT pk_pago PRIMARY KEY (id_pago);
+
+ALTER TABLE Resenia       
+ADD CONSTRAINT pk_resenia PRIMARY KEY (id_resenia);
+
+-- UNIQUE
+
+ALTER TABLE Usuario 
+ADD CONSTRAINT uq_usuario_correo UNIQUE (correo);
+
+
+-- FOREIGN KEYS
+
+ALTER TABLE Estudiante
+ADD CONSTRAINT fk_estudiante_usuario FOREIGN KEY (id_usuario)
+REFERENCES Usuario (id_usuario);
+
+ALTER TABLE Tutor
+ADD CONSTRAINT fk_tutor_usuario FOREIGN KEY (id_usuario)
+REFERENCES Usuario (id_usuario);
+
+ALTER TABLE Disponibilidad
+ADD CONSTRAINT fk_disponibilidad_tutor FOREIGN KEY (id_tutor)
+REFERENCES Tutor (id_tutor);
+
+ALTER TABLE Materia
+ADD CONSTRAINT fk_materia_especialidad FOREIGN KEY (id_especialidad)
+REFERENCES Especialidad (id_especialidad);
+
+ALTER TABLE Reserva
+ADD CONSTRAINT fk_reserva_estudiante FOREIGN KEY (id_estudiante)
+REFERENCES Estudiante (id_estudiante);
+
+ALTER TABLE Reserva
+ADD CONSTRAINT fk_reserva_tutor FOREIGN KEY (id_tutor)
+REFERENCES Tutor (id_tutor);
+
+ALTER TABLE Reserva
+ADD CONSTRAINT fk_reserva_materia FOREIGN KEY (id_materia)
+REFERENCES Materia (id_materia);
+
+ALTER TABLE Sesion
+ADD CONSTRAINT fk_sesion_reserva FOREIGN KEY (id_reserva)
+REFERENCES Reserva (id_reserva);
+
+ALTER TABLE Pago
+ADD CONSTRAINT fk_pago_sesion FOREIGN KEY (id_sesion)
+REFERENCES Sesion (id_sesion);
+
+ALTER TABLE Resenia
+ADD CONSTRAINT fk_resenia_reserva FOREIGN KEY (id_reserva)
+REFERENCES Reserva (id_reserva);
+
+-- CHECKs
+
+ALTER TABLE Tutor
+ADD CONSTRAINT ck_tutor_tarifa 
+CHECK (tarifa_hora >= 0);
+
+ALTER TABLE Tutor
+ADD CONSTRAINT ck_tutor_calificacion 
+CHECK (calificacion_promedio BETWEEN 0 AND 100);
+
+ALTER TABLE Reserva
+ADD CONSTRAINT ck_reserva_estado
+CHECK (estado IN ('En espera', 'Confirmada', 'Cancelada', 'Finalizada'));
+
+ALTER TABLE Sesion
+ADD CONSTRAINT ck_sesion_estado
+CHECK (estado IN ('Programada','En curso','Finalizada','Cancelada'));
+
+ALTER TABLE Pago
+ADD CONSTRAINT ck_pago_estado 
+CHECK (estado IN ('En espera','Pagado','Fallido'));
+
+-- Consulta SQL básica
+
+SELECT nombre, correo, rol FROM Usuario;
+
+-- Consulta con identificador
+
+SELECT e.id_estudiante, u.nombre, u.correo
+FROM Estudiante e
+JOIN Usuario u ON e.id_estudiante = u.id_usuario;
+
+-- Inserción de datos de ejemplo
+
+-- Usuario (id_usuario, nombre, correo, contrasena, rol)
+
+INSERT INTO Usuario VALUES (1, 'Juan Pérez', 'juan@correo.com', '12345', 'E');
+
+INSERT INTO Usuario VALUES (2, 'Laura Gómez', 'laura@correo.com', 'abcd', 'T');
+
+INSERT INTO Estudiante VALUES (1, 1, 'Ingeniería de Sistemas', 5);
+
+INSERT INTO Tutor VALUES (1, 2, '3 años de experiencia en matemáticas', 50000, 90);
+
+INSERT INTO Especialidad VALUES (1, 'Matemáticas', 'Cálculo, álgebra y estadística');
+
+INSERT INTO Materia VALUES (1, 'Cálculo Integral', 1);
+
+INSERT INTO Reserva VALUES (1, 1, 1, 1, SYSDATE, 'Confirmada');
+
+INSERT INTO Sesion VALUES (1, 1, SYSDATE, SYSDATE + 1/24, 'Programada');
+
+INSERT INTO Pago VALUES (1, 1, 50000, SYSDATE, 'Pagado');
+
+INSERT INTO Resenia VALUES (1, 1, 95, 'Excelente clase, muy clara y dinámica', SYSDATE);
+
+
+-- Eliminación de datos
+
+DELETE FROM Resenia;
+DELETE FROM Pago;
+DELETE FROM Sesion;
+DELETE FROM Reserva;
+DELETE FROM Materia;
+DELETE FROM Especialidad;
+DELETE FROM Disponibilidad;
+DELETE FROM Tutor;
+DELETE FROM Estudiante;
+DELETE FROM Usuario;
+
+-- Eliminación de tablas en orden correcto
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TABLE Resenia CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Pago CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Sesion CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Reserva CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Materia CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Especialidad CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Disponibilidad CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Tutor CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Estudiante CASCADE CONSTRAINTS';
+    EXECUTE IMMEDIATE 'DROP TABLE Usuario CASCADE CONSTRAINTS';
+END;
+/
+
+
+
+-------------------------------------------------------------
+--SECCIÓN VERDE: PROCEDIMENTALES Y PRUEBAS
+-------------------------------------------------------------
+
+
+
+
+-------------------------------------------------------------
+-- TUPLAS
+-------------------------------------------------------------
+
+CREATE SEQUENCE seq_usuario START WITH 3 INCREMENT BY 1;
+CREATE SEQUENCE seq_estudiante START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_tutor START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_disponibilidad START WITH 1 INCREMENT BY 1;
+CREATE SEQUENCE seq_especialidad START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_materia START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_reserva START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_sesion START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_pago START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_resenia START WITH 2 INCREMENT BY 1;
+
+
+-------------------------------------------------------------
+-- ACCIONES
+-------------------------------------------------------------
+
+-- Procedimiento para registrar usuarios
+
+CREATE OR REPLACE PROCEDURE sp_registrar_usuario(
+    p_nombre IN VARCHAR2,
+    p_correo IN VARCHAR2,
+    p_contrasena IN VARCHAR2,
+    p_rol IN VARCHAR2
+) AS
+BEGIN
+    INSERT INTO Usuario (id_usuario, nombre, correo, contrasena, rol)
+    VALUES (seq_usuario.NEXTVAL, p_nombre, p_correo, p_contrasena, p_rol);
+    COMMIT;
+END;
+/
+
+-- Procedimiento para crear una reserva
+
+CREATE OR REPLACE PROCEDURE sp_crear_reserva(
+    p_id_estudiante IN INT,
+    p_id_tutor IN INT,
+    p_id_materia IN INT
+) AS
+BEGIN
+    INSERT INTO Reserva (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
+    VALUES (seq_reserva.NEXTVAL, p_id_estudiante, p_id_tutor, p_id_materia, SYSDATE, 'En espera');
+    COMMIT;
+END;
+/
+
+-- Función para calcular las ganancias totales de un tutor
+
+CREATE OR REPLACE FUNCTION fn_ganancia_tutor(p_id_tutor INT)
+RETURN NUMBER IS
+    v_total NUMBER;
+BEGIN
+    SELECT NVL(SUM(p.monto), 0)
+    INTO v_total
+    FROM Pago p
+    JOIN Sesion s ON p.id_sesion = s.id_sesion
+    JOIN Reserva r ON s.id_reserva = r.id_reserva
+    WHERE r.id_tutor = p_id_tutor;
+    RETURN v_total;
+END;
+/
+
+-------------------------------------------------------------
+-- DISPARADORES
+-------------------------------------------------------------
+
+-- Trigger para asignar ID automático a usuarios
+
+CREATE OR REPLACE TRIGGER trg_usuario_autoinc
+BEFORE INSERT ON Usuario
+FOR EACH ROW
+BEGIN
+    :NEW.id_usuario := seq_usuario.NEXTVAL;
+END;
+/
+
+-- Trigger para asignar ID automático a estudiantes
+
+CREATE OR REPLACE TRIGGER trg_estudiante_autoinc
+BEFORE INSERT ON Estudiante
+FOR EACH ROW
+BEGIN
+    :NEW.id_estudiante := seq_estudiante.NEXTVAL;
+END;
+/
+
+-- Trigger para asignar ID automático a tutores
+
+CREATE OR REPLACE TRIGGER trg_tutor_autoinc
+BEFORE INSERT ON Tutor
+FOR EACH ROW
+BEGIN
+    :NEW.id_tutor := seq_tutor.NEXTVAL;
+END;
+/
+
+-- Trigger que impide eliminar usuarios con reservas activas
+
+CREATE OR REPLACE TRIGGER trg_no_borrar_con_reservas
+BEFORE DELETE ON Usuario
+FOR EACH ROW
+DECLARE
+    v_count INT;
+BEGIN
+    SELECT COUNT(*) INTO v_count
+    FROM Reserva r
+    JOIN Estudiante e ON r.id_estudiante = e.id_estudiante
+    WHERE e.id_usuario = :OLD.id_usuario;
+
+    IF v_count > 0 THEN
+        RAISE_APPLICATION_ERROR(-20001, 'No se puede eliminar el usuario: tiene reservas asociadas.');
+    END IF;
+END;
+/
+
+-------------------------------------------------------------
+-- TUPLASOK
+-- (Inserciones válidas)
+-------------------------------------------------------------
+
+INSERT INTO Usuario VALUES (3, 'Carlos Ruiz', 'carlos@correo.com', 'abc123', 'E');
+INSERT INTO Estudiante VALUES (2, 3, 'Ingeniería Electrónica', 3);
+INSERT INTO Tutor VALUES (2, 2, '5 años de experiencia en física', 80000, 95);
+INSERT INTO Materia VALUES (2, 'Álgebra Lineal', 1);
+INSERT INTO Reserva VALUES (2, 1, 2, 2, SYSDATE, 'En espera');
+INSERT INTO Sesion VALUES (2, 2, SYSDATE, SYSDATE + 1/24, 'Programada');
+INSERT INTO Pago VALUES (2, 2, 80000, SYSDATE, 'Pagado');
+INSERT INTO Resenia VALUES (2, 2, 100, 'Muy buena clase', SYSDATE);
+COMMIT;
+
+-------------------------------------------------------------
+-- TUPLASNOOK
+-- (Inserciones inválidas que deben generar error)
+-------------------------------------------------------------
+
+-- Intentar insertar un correo duplicado
+
+INSERT INTO Usuario VALUES (4, 'Pedro', 'carlos@correo.com', 'pass', 'E');
+
+-- Intentar insertar un tutor con tarifa negativa
+
+INSERT INTO Tutor VALUES (3, 2, 'Sin experiencia', -10000, 80);
+
+-- Intentar insertar una reserva con estado no válido
+
+INSERT INTO Reserva VALUES (3, 1, 1, 1, SYSDATE, 'Pendiente');
+
+
+-------------------------------------------------------------
+-- ACCIONESOK
+-- (Ejecución de procedimientos válidos)
+-------------------------------------------------------------
+
+BEGIN
+    sp_registrar_usuario('Ana Torres', 'ana@correo.com', 'clave', 'T');
+END;
+/
+
+BEGIN
+    sp_crear_reserva(1, 1, 1);
+END;
+/
+
+SELECT fn_ganancia_tutor(1) AS GananciaTutor FROM DUAL;
+
+
+-------------------------------------------------------------
+-- DISPARADORESOK
+-- (Comprobación de triggers activos)
+-------------------------------------------------------------
+
+-- Insertar nuevo usuario y verificar autoincremento
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Miguel Ángel', 'miguel@correo.com', 'xyz', 'E');
+
+-- Eliminar usuario sin reservas (debe funcionar)
+
+DELETE FROM Usuario WHERE correo = 'miguel@correo.com';
+COMMIT;
+
+-------------------------------------------------------------
+-- DISPARADORESNOOK
+-------------------------------------------------------------
+
+-- Intentar eliminar usuario con reservas activas
+
+DELETE FROM Usuario WHERE id_usuario = 1;
+
+-- Intentar insertar un tutor con tarifa excesiva (trigger experimental)
+
+ALTER TRIGGER trg_validar_tarifa ENABLE;
+INSERT INTO Tutor VALUES (5, 2, 'Experto en programación', 300000, 90);
+ALTER TRIGGER trg_validar_tarifa DISABLE;
+
+-------------------------------------------------------------
+-- XDISPARADORES
+-- (Eliminación de triggers existentes)
+-------------------------------------------------------------
+
+BEGIN
+    EXECUTE IMMEDIATE 'DROP TRIGGER trg_usuario_autoinc';
+    EXECUTE IMMEDIATE 'DROP TRIGGER trg_estudiante_autoinc';
+    EXECUTE IMMEDIATE 'DROP TRIGGER trg_tutor_autoinc';
+    EXECUTE IMMEDIATE 'DROP TRIGGER trg_no_borrar_con_reservas';
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Algunos triggers no existían o ya fueron eliminados.');
+END;
+/
