@@ -191,7 +191,7 @@ CHECK (estado IN ('En espera','Pagado','Fallido'));
 
 
 
--- Inserción de datos de ejemplo(10.000 datos por tabla)
+-- Inserción de datos de ejemplo(10.000 datos por tabla)(PoblarOk)
 
 -------------------------------------------------------------
 -- 10.000 USUARIOS
@@ -353,7 +353,175 @@ END;
 
 COMMIT;
 
+-----------------------------------------------------------------------------------------------------------
+-- PoblarNoOk
+-------------------------------------------------------------------------------------------------------------
 
+------------------------------------------------------------
+-- 1. PRIMARY KEY DUPLICADA → Usuarios.id_usuario
+------------------------------------------------------------
+
+-- Todos fallan porque id_usuario = 1 ya existe
+INSERT INTO Usuarios VALUES (1,'A','a@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'B','b@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'C','c@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'D','d@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'E','e@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'F','f@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'G','g@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'H','h@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'I','i@mail.com','x','Est'); -- PK duplicada
+INSERT INTO Usuarios VALUES (1,'J','j@mail.com','x','Est'); -- PK duplicada
+
+
+------------------------------------------------------------
+-- 2. UNIQUE CORREO VIOLADO
+------------------------------------------------------------
+
+-- Todos fallan porque el correo "correo@mail.com" se repite
+INSERT INTO Usuarios VALUES (2,'Juan','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (3,'Ana','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (4,'Luis','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (5,'Ana','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (6,'Sara','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (7,'Leo','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (8,'Lia','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (9,'Sam','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (10,'Kim','correo@mail.com','123','Est'); -- correo repetido
+INSERT INTO Usuarios VALUES (11,'Dan','correo@mail.com','123','Est'); -- correo repetido
+
+
+------------------------------------------------------------
+-- 3. FOREIGN KEY → Estudiantes.id_usuario REFERENCIA A TABLA *NO EXISTENTE* "Usuario"
+------------------------------------------------------------
+
+-- Todos fallan porque “Usuario” NO existe (la tabla correcta es Usuarios)
+INSERT INTO Estudiantes VALUES (1,100,'Ing',5); -- FK referencia tabla inexistente
+INSERT INTO Estudiantes VALUES (2,101,'Medicina',3); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (3,102,'Derecho',4); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (4,103,'Química',1); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (5,104,'Arte',2); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (6,105,'Ing',6); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (7,106,'Ing',7); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (8,107,'Ing',8); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (9,108,'Ing',2); -- tabla inexistente
+INSERT INTO Estudiantes VALUES (10,109,'Ing',1); -- tabla inexistente
+
+
+------------------------------------------------------------
+-- 4. FOREIGN KEY → Tutores.id_usuario REFERENCIA A TABLA INEXISTENTE "Usuario"
+------------------------------------------------------------
+
+INSERT INTO Tutores VALUES (1,200,'Expert',50,80); -- FK tabla inexistente
+INSERT INTO Tutores VALUES (2,201,'Avanzado',60,90); -- tabla inexistente
+INSERT INTO Tutores VALUES (3,202,'Básico',20,50); -- tabla inexistente
+INSERT INTO Tutores VALUES (4,203,'10 años',40,65); -- tabla inexistente
+INSERT INTO Tutores VALUES (5,204,'6 años',70,78); -- tabla inexistente
+INSERT INTO Tutores VALUES (6,205,'2 años',10,88); -- tabla inexistente
+INSERT INTO Tutores VALUES (7,206,'7 años',75,82); -- tabla inexistente
+INSERT INTO Tutores VALUES (8,207,'8 años',90,95); -- tabla inexistente
+INSERT INTO Tutores VALUES (9,208,'9 años',95,99); -- tabla inexistente
+INSERT INTO Tutores VALUES (10,209,'5 años',60,60); -- tabla inexistente
+
+
+------------------------------------------------------------
+-- 5. CHECK → Tarifas negativas (ck_tutor_tarifa)
+------------------------------------------------------------
+
+INSERT INTO Tutores VALUES (20,1,'Expert',-1,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (21,1,'Expert',-10,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (22,1,'Expert',-5,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (23,1,'Expert',-100,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (24,1,'Expert',-0.1,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (25,1,'Expert',-999,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (26,1,'Expert',-40,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (27,1,'Expert',-22,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (28,1,'Expert',-3,80); -- tarifa negativa
+INSERT INTO Tutores VALUES (29,1,'Expert',-14,80); -- tarifa negativa
+
+
+------------------------------------------------------------
+-- 6. CHECK → calificacion_promedio FUERA DE 0–100
+------------------------------------------------------------
+
+INSERT INTO Tutores VALUES (30,1,'Exp',50,101); -- >100
+INSERT INTO Tutores VALUES (31,1,'Exp',60,150); -- >100
+INSERT INTO Tutores VALUES (32,1,'Exp',10,120); -- >100
+INSERT INTO Tutores VALUES (33,1,'Exp',10,-1);  -- <0
+INSERT INTO Tutores VALUES (34,1,'Exp',10,-5);  -- <0
+INSERT INTO Tutores VALUES (35,1,'Exp',10,-100); -- <0
+INSERT INTO Tutores VALUES (36,1,'Exp',10,200); -- >100
+INSERT INTO Tutores VALUES (37,1,'Exp',10,999); -- >100
+INSERT INTO Tutores VALUES (38,1,'Exp',10,300); -- >100
+INSERT INTO Tutores VALUES (39,1,'Exp',10,-10); -- <0
+
+
+------------------------------------------------------------
+-- 7. CHECK → Reserva.estado inválido
+------------------------------------------------------------
+
+INSERT INTO Reservas VALUES (1,1,1,1,SYSDATE,'Pendiente'); -- estado inválido
+INSERT INTO Reservas VALUES (2,1,1,1,SYSDATE,'Procesando'); -- inválido
+INSERT INTO Reservas VALUES (3,1,1,1,SYSDATE,'OK'); -- inválido
+INSERT INTO Reservas VALUES (4,1,1,1,SYSDATE,'Error'); -- inválido
+INSERT INTO Reservas VALUES (5,1,1,1,SYSDATE,'Fallo'); -- inválido
+INSERT INTO Reservas VALUES (6,1,1,1,SYSDATE,'Aprobada'); -- inválido
+INSERT INTO Reservas VALUES (7,1,1,1,SYSDATE,'Negada'); -- inválido
+INSERT INTO Reservas VALUES (8,1,1,1,SYSDATE,'Nada'); -- inválido
+INSERT INTO Reservas VALUES (9,1,1,1,SYSDATE,'X'); -- inválido
+INSERT INTO Reservas VALUES (10,1,1,1,SYSDATE,' '); -- inválido
+
+
+------------------------------------------------------------
+-- 8. CHECK → Sesion.estado inválido
+------------------------------------------------------------
+
+INSERT INTO Sesiones VALUES (1,1,SYSDATE,SYSDATE,'Invalido'); -- no permitido
+INSERT INTO Sesiones VALUES (2,1,SYSDATE,SYSDATE,'Listo'); -- no permitido
+INSERT INTO Sesiones VALUES (3,1,SYSDATE,SYSDATE,'Stop'); -- no permitido
+INSERT INTO Sesiones VALUES (4,1,SYSDATE,SYSDATE,'On'); -- no permitido
+INSERT INTO Sesiones VALUES (5,1,SYSDATE,SYSDATE,'Off'); -- no permitido
+INSERT INTO Sesiones VALUES (6,1,SYSDATE,SYSDATE,'Cancel'); -- no permitido
+INSERT INTO Sesiones VALUES (7,1,SYSDATE,SYSDATE,'Terminado'); -- no permitido
+INSERT INTO Sesiones VALUES (8,1,SYSDATE,SYSDATE,'None'); -- no permitido
+INSERT INTO Sesiones VALUES (9,1,SYSDATE,SYSDATE,'Fake'); -- no permitido
+INSERT INTO Sesiones VALUES (10,1,SYSDATE,SYSDATE,'X'); -- no permitido
+
+
+------------------------------------------------------------
+-- 9. CHECK → Pago.estado inválido
+------------------------------------------------------------
+
+INSERT INTO Pagos VALUES (1,1,10,SYSDATE,'Enviado'); -- no permitido
+INSERT INTO Pagos VALUES (2,1,10,SYSDATE,'Ok'); -- no permitido
+INSERT INTO Pagos VALUES (3,1,10,SYSDATE,'Listo'); -- no permitido
+INSERT INTO Pagos VALUES (4,1,10,SYSDATE,'Error'); -- no permitido
+INSERT INTO Pagos VALUES (5,1,10,SYSDATE,'Fallo'); -- no permitido
+INSERT INTO Pagos VALUES (6,1,10,SYSDATE,'Pago'); -- no permitido
+INSERT INTO Pagos VALUES (7,1,10,SYSDATE,'Completado'); -- no permitido
+INSERT INTO Pagos VALUES (8,1,10,SYSDATE,'Negado'); -- no permitido
+INSERT INTO Pagos VALUES (9,1,10,SYSDATE,'X'); -- no permitido
+INSERT INTO Pagos VALUES (10,1,10,SYSDATE,' '); -- no permitido
+
+
+------------------------------------------------------------
+-- 10. FOREIGN KEY → Reservas referencing tablas inexistentes (Tutor, Estudiante, Materia)
+------------------------------------------------------------
+
+INSERT INTO Reservas VALUES (20,999,999,999,SYSDATE,'Confirmada'); -- Todas FK fallan
+INSERT INTO Reservas VALUES (21,500,500,500,SYSDATE,'Confirmada'); -- fk estudiante no existe
+INSERT INTO Reservas VALUES (22,1,500,500,SYSDATE,'Confirmada'); -- fk tutor no existe
+INSERT INTO Reservas VALUES (23,1,1,500,SYSDATE,'Confirmada'); -- fk materia no existe
+INSERT INTO Reservas VALUES (24,200,1,1,SYSDATE,'Confirmada'); -- estudiante inexistente
+INSERT INTO Reservas VALUES (25,300,200,1,SYSDATE,'Confirmada'); -- estudiante y tutor inexistentes
+INSERT INTO Reservas VALUES (26,400,1,200,SYSDATE,'Confirmada'); -- estudiante y materia inexistentes
+INSERT INTO Reservas VALUES (27,1,400,200,SYSDATE,'Confirmada'); -- tutor y materia inexistentes
+INSERT INTO Reservas VALUES (28,999,1,1,SYSDATE,'Confirmada'); -- estudiante inexistente
+INSERT INTO Reservas VALUES (29,1,999,1,SYSDATE,'Confirmada'); -- tutor inexistente
+
+---------------------------------------------------------------------------------------------------------------------
+-- Eliminacion 
+-------------------------------------------------------------------------------------------------------------------
 
 
 -- Eliminación de datos
