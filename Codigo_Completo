@@ -6,7 +6,7 @@
 -- TABLAS
 --------------------------
 
-CREATE TABLE Usuario (
+CREATE TABLE Usuarios (
 id_usuario INT NOT NULL,
 nombre VARCHAR2(150) NOT NULL,
 correo VARCHAR2(150) NOT NULL,
@@ -14,14 +14,14 @@ contrasena VARCHAR2(200) NOT NULL,
 rol VARCHAR2(30) NOT NULL
 );
 
-CREATE TABLE Estudiante (
+CREATE TABLE Estudiantes (
 id_estudiante INT NOT NULL,
 id_usuario INT NOT NULL,
 carrera VARCHAR2(100) NOT NULL,
 semestre INT NOT NULL
 );
 
-CREATE TABLE Tutor (
+CREATE TABLE Tutores (
 id_tutor INT NOT NULL,
 id_usuario INT NOT NULL,
 experiencia VARCHAR2(200) NOT NULL,
@@ -29,7 +29,7 @@ tarifa_hora NUMBER(10,2) NOT NULL,
 calificacion_promedio NUMBER(5,2) NOT NULL
 );
 
-CREATE TABLE Disponibilidad (
+CREATE TABLE Disponibilidades (
 id_disponibilidad INT NOT NULL,
 id_tutor INT NOT NULL,
 fecha DATE NOT NULL,
@@ -38,19 +38,19 @@ hora_fin DATE NOT NULL,
 estado VARCHAR2(20) NOT NULL 
 );
 
-CREATE TABLE Especialidad (
+CREATE TABLE Especialidades (
 id_especialidad INT NOT NULL,
 nombre VARCHAR2(120) NOT NULL,
 descripcion VARCHAR2(300) NOT NULL
 );
 
-CREATE TABLE Materia (
+CREATE TABLE Materias (
 id_materia INT NOT NULL,
 nombre VARCHAR2(120) NOT NULL,
 id_especialidad INT NOT NULL
 );
 
-CREATE TABLE Reserva (
+CREATE TABLE Reservas (
 id_reserva INT NOT NULL,
 id_estudiante INT NOT NULL,
 id_tutor INT NOT NULL,
@@ -59,7 +59,7 @@ fecha_reserva DATE NOT NULL,
 estado VARCHAR2(20) NOT NULL
 );
 
-CREATE TABLE Sesion (
+CREATE TABLE Sesiones (
 id_sesion INT NOT NULL,
 id_reserva INT NOT NULL,
 fecha_inicio DATE NOT NULL,
@@ -67,7 +67,7 @@ fecha_fin DATE NOT NULL,
 estado VARCHAR2(20) NOT NULL
 );
 
-CREATE TABLE Pago (
+CREATE TABLE Pagos (
 id_pago INT NOT NULL,
 id_sesion INT NOT NULL,
 monto NUMBER(12,2) NOT NULL,
@@ -75,7 +75,7 @@ fecha_pago DATE NOT NULL,
 estado VARCHAR2(20) NOT NULL
 );
 
-CREATE TABLE Resenia (
+CREATE TABLE Resenias (
 id_resenia INT NOT NULL,
 id_reserva INT NOT NULL,
 calificacion NUMBER(3,1) NOT NULL,
@@ -89,153 +89,285 @@ fecha_resenia DATE NOT NULL
 
 -- PRIMARY KEYS
 
-ALTER TABLE Usuario
+ALTER TABLE Usuarios
 ADD CONSTRAINT pk_usuario PRIMARY KEY (id_usuario);
 
-ALTER TABLE Estudiante    
+ALTER TABLE Estudiantes    
 ADD CONSTRAINT pk_estudiante PRIMARY KEY (id_estudiante);
 
-ALTER TABLE Tutor         
+ALTER TABLE Tutores   
 ADD CONSTRAINT pk_tutor PRIMARY KEY (id_tutor);
 
-ALTER TABLE Disponibilidad 
+ALTER TABLE Disponibilidades 
 ADD CONSTRAINT pk_disponibilidad PRIMARY KEY (id_disponibilidad);
 
-ALTER TABLE Especialidad  
+ALTER TABLE Especialidades
 ADD CONSTRAINT pk_especialidad PRIMARY KEY (id_especialidad);
 
-ALTER TABLE Materia       
+ALTER TABLE Materias
 ADD CONSTRAINT pk_materia PRIMARY KEY (id_materia);
 
-ALTER TABLE Reserva       
+ALTER TABLE Reservas      
 ADD CONSTRAINT pk_reserva PRIMARY KEY (id_reserva);
 
-ALTER TABLE Sesion        
+ALTER TABLE Sesiones      
 ADD CONSTRAINT pk_sesion PRIMARY KEY (id_sesion);
 
-ALTER TABLE Pago          
+ALTER TABLE Pagos      
 ADD CONSTRAINT pk_pago PRIMARY KEY (id_pago);
 
-ALTER TABLE Resenia       
+ALTER TABLE Resenias       
 ADD CONSTRAINT pk_resenia PRIMARY KEY (id_resenia);
 
 -- UNIQUE
 
-ALTER TABLE Usuario 
+ALTER TABLE Usuarios
 ADD CONSTRAINT uq_usuario_correo UNIQUE (correo);
 
 
 -- FOREIGN KEYS
 
-ALTER TABLE Estudiante
+ALTER TABLE Estudiantes
 ADD CONSTRAINT fk_estudiante_usuario FOREIGN KEY (id_usuario)
 REFERENCES Usuario (id_usuario);
 
-ALTER TABLE Tutor
+ALTER TABLE Tutores
 ADD CONSTRAINT fk_tutor_usuario FOREIGN KEY (id_usuario)
 REFERENCES Usuario (id_usuario);
 
-ALTER TABLE Disponibilidad
+ALTER TABLE Disponibilidades
 ADD CONSTRAINT fk_disponibilidad_tutor FOREIGN KEY (id_tutor)
 REFERENCES Tutor (id_tutor);
 
-ALTER TABLE Materia
+ALTER TABLE Materias
 ADD CONSTRAINT fk_materia_especialidad FOREIGN KEY (id_especialidad)
 REFERENCES Especialidad (id_especialidad);
 
-ALTER TABLE Reserva
+ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_estudiante FOREIGN KEY (id_estudiante)
 REFERENCES Estudiante (id_estudiante);
 
-ALTER TABLE Reserva
+ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_tutor FOREIGN KEY (id_tutor)
 REFERENCES Tutor (id_tutor);
 
-ALTER TABLE Reserva
+ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_materia FOREIGN KEY (id_materia)
 REFERENCES Materia (id_materia);
 
-ALTER TABLE Sesion
+ALTER TABLE Sesiones
 ADD CONSTRAINT fk_sesion_reserva FOREIGN KEY (id_reserva)
 REFERENCES Reserva (id_reserva);
 
-ALTER TABLE Pago
+ALTER TABLE Pagos
 ADD CONSTRAINT fk_pago_sesion FOREIGN KEY (id_sesion)
 REFERENCES Sesion (id_sesion);
 
-ALTER TABLE Resenia
+ALTER TABLE Resenias
 ADD CONSTRAINT fk_resenia_reserva FOREIGN KEY (id_reserva)
 REFERENCES Reserva (id_reserva);
 
 -- CHECKs
 
-ALTER TABLE Tutor
+ALTER TABLE Tutores
 ADD CONSTRAINT ck_tutor_tarifa 
 CHECK (tarifa_hora >= 0);
 
-ALTER TABLE Tutor
+ALTER TABLE Tutores
 ADD CONSTRAINT ck_tutor_calificacion 
 CHECK (calificacion_promedio BETWEEN 0 AND 100);
 
-ALTER TABLE Reserva
+ALTER TABLE Reservas
 ADD CONSTRAINT ck_reserva_estado
 CHECK (estado IN ('En espera', 'Confirmada', 'Cancelada', 'Finalizada'));
 
-ALTER TABLE Sesion
+ALTER TABLE Sesiones
 ADD CONSTRAINT ck_sesion_estado
 CHECK (estado IN ('Programada','En curso','Finalizada','Cancelada'));
 
-ALTER TABLE Pago
+ALTER TABLE Pagos
 ADD CONSTRAINT ck_pago_estado 
 CHECK (estado IN ('En espera','Pagado','Fallido'));
 
--- Consulta SQL básica
 
-SELECT nombre, correo, rol FROM Usuario;
 
--- Consulta con identificador
+-- Inserción de datos de ejemplo(10.000 datos por tabla)
 
-SELECT e.id_estudiante, u.nombre, u.correo
-FROM Estudiante e
-JOIN Usuario u ON e.id_estudiante = u.id_usuario;
+-------------------------------------------------------------
+-- 10.000 USUARIOS
+-------------------------------------------------------------
 
--- Inserción de datos de ejemplo
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO USUARIOS (id_usuario, nombre, correo, contrasena, rol)
+        VALUES (
+            i,
+            'Usuario ' || i,
+            'usuario' || i || '@mail.com',
+            'pass' || i,
+            CASE 
+                WHEN MOD(i, 2) = 0 THEN 'Estudiante'
+                ELSE 'Tutor'
+            END
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 ESTUDIANTES (usuarios pares)
+-------------------------------------------------------------
+DECLARE
+    v_id NUMBER := 2; 
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO ESTUDIANTES (id_estudiante, id_usuario, carrera, semestre)
+        VALUES (
+            i,
+            v_id,
+            'Carrera ' || MOD(i, 20),
+            MOD(i, 10) + 1
+        );
+        v_id := v_id + 2;
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 TUTORES (usuarios impares)
+-------------------------------------------------------------
+DECLARE
+    v_id NUMBER := 1;
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO TUTORES (id_tutor, id_usuario, experiencia, tarifa_hora, calificacion_promedio)
+        VALUES (
+            i,
+            v_id,
+            'Experiencia ' || i,
+            MOD(i, 50) + 10,
+            MOD(i, 5) * 10
+        );
+        v_id := v_id + 2;
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 ESPECIALIDADES
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO ESPECIALIDADES (id_especialidad, nombre, descripcion)
+        VALUES (
+            i,
+            'Especialidad ' || i,
+            'Descripcion de especialidad ' || i
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 MATERIAS
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO MATERIAS (id_materia, nombre, id_especialidad)
+        VALUES (
+            i,
+            'Materia ' || i,
+            MOD(i, 10000) + 1
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 RESERVAS
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO RESERVAS (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
+        VALUES (
+            i,
+            MOD(i, 10000) + 1,
+            MOD(i + 1, 10000) + 1,
+            MOD(i + 2, 10000) + 1,
+            SYSDATE - MOD(i, 365),
+            'Confirmada'
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 SESIONES
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO SESIONES (id_sesion, id_reserva, fecha_inicio, fecha_fin, estado)
+        VALUES (
+            i,
+            MOD(i, 10000) + 1,
+            SYSDATE - MOD(i, 365),
+            SYSDATE - MOD(i, 365) + 1/24,
+            'Finalizada'
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 PAGOS
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO PAGOS (id_pago, id_sesion, monto, fecha_pago, estado)
+        VALUES (
+            i,
+            MOD(i, 10000) + 1,
+            MOD(i, 100) + 20,
+            SYSDATE - MOD(i, 365),
+            'Pagado'
+        );
+    END LOOP;
+END;
+/
+-------------------------------------------------------------
+-- 10.000 RESEÑAS
+-------------------------------------------------------------
+DECLARE
+BEGIN
+    FOR i IN 1..10000 LOOP
+        INSERT INTO RESENIAS (id_resenia, id_reserva, calificacion, comentario, fecha_resenia)
+        VALUES (
+            i,
+            MOD(i, 10000) + 1,
+            MOD(i, 5) + 1,
+            'Comentario ' || i,
+            SYSDATE - MOD(i, 365)
+        );
+    END LOOP;
+END;
+/
 
--- Usuario (id_usuario, nombre, correo, contrasena, rol)
+COMMIT;
 
-INSERT INTO Usuario VALUES (1, 'Juan Pérez', 'juan@correo.com', '12345', 'E');
 
-INSERT INTO Usuario VALUES (2, 'Laura Gómez', 'laura@correo.com', 'abcd', 'T');
-
-INSERT INTO Estudiante VALUES (1, 1, 'Ingeniería de Sistemas', 5);
-
-INSERT INTO Tutor VALUES (1, 2, '3 años de experiencia en matemáticas', 50000, 90);
-
-INSERT INTO Especialidad VALUES (1, 'Matemáticas', 'Cálculo, álgebra y estadística');
-
-INSERT INTO Materia VALUES (1, 'Cálculo Integral', 1);
-
-INSERT INTO Reserva VALUES (1, 1, 1, 1, SYSDATE, 'Confirmada');
-
-INSERT INTO Sesion VALUES (1, 1, SYSDATE, SYSDATE + 1/24, 'Programada');
-
-INSERT INTO Pago VALUES (1, 1, 50000, SYSDATE, 'Pagado');
-
-INSERT INTO Resenia VALUES (1, 1, 95, 'Excelente clase, muy clara y dinámica', SYSDATE);
 
 
 -- Eliminación de datos
 
-DELETE FROM Resenia;
-DELETE FROM Pago;
-DELETE FROM Sesion;
-DELETE FROM Reserva;
-DELETE FROM Materia;
-DELETE FROM Especialidad;
-DELETE FROM Disponibilidad;
-DELETE FROM Tutor;
-DELETE FROM Estudiante;
-DELETE FROM Usuario;
+DELETE FROM Resenias;
+DELETE FROM Pagos;
+DELETE FROM Sesiones;
+DELETE FROM Reservas;
+DELETE FROM Materias;
+DELETE FROM Especialidades;
+DELETE FROM Disponibilidades;
+DELETE FROM Tutores;
+DELETE FROM Estudiantes;
+DELETE FROM Usuarios;
 
 -- Eliminación de tablas en orden correcto
 
@@ -253,13 +385,19 @@ BEGIN
 END;
 /
 
+-- Consulta SQL básica
 
+SELECT nombre, correo, rol FROM Usuario;
+
+-- Consulta con identificador
+
+SELECT e.id_estudiante, u.nombre, u.correo
+FROM Estudiante e
+JOIN Usuario u ON e.id_estudiante = u.id_usuario;
 
 -------------------------------------------------------------
 --SECCIÓN VERDE: PROCEDIMENTALES Y PRUEBAS
 -------------------------------------------------------------
-
-
 
 
 -------------------------------------------------------------
