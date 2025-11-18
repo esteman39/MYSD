@@ -353,9 +353,9 @@ END;
 
 COMMIT;
 
------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------
 -- PoblarNoOk
--------------------------------------------------------------------------------------------------------------
+---------------------------------------------------------------------
 
 ------------------------------------------------------------
 -- 1. PRIMARY KEY DUPLICADA → Usuarios.id_usuario
@@ -519,11 +519,9 @@ INSERT INTO Reservas VALUES (27,1,400,200,SYSDATE,'Confirmada'); -- tutor y mate
 INSERT INTO Reservas VALUES (28,999,1,1,SYSDATE,'Confirmada'); -- estudiante inexistente
 INSERT INTO Reservas VALUES (29,1,999,1,SYSDATE,'Confirmada'); -- tutor inexistente
 
----------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------
 -- Eliminacion 
--------------------------------------------------------------------------------------------------------------------
-
-
+----------------------------------------------------------------
 -- Eliminación de datos
 
 DELETE FROM Resenias;
@@ -553,20 +551,259 @@ BEGIN
 END;
 /
 
--- Consulta SQL básica
+-------------------------------------------------------------
+-- Consultas
+-------------------------------------------------------------
 
-SELECT nombre, correo, rol FROM Usuario;
+-------------------------------------------------------------
+-- Operativas
+-------------------------------------------------------------
 
--- Consulta con identificador
+-- 1. Listar todos los usuarios
+SELECT * FROM Usuarios;
 
-SELECT e.id_estudiante, u.nombre, u.correo
-FROM Estudiante e
-JOIN Usuario u ON e.id_estudiante = u.id_usuario;
+-- 2. Listar tutores con su experiencia
+SELECT nombre, experiencia
+FROM Tutores t
+JOIN Usuarios u ON t.id_usuario = u.id_usuario;
+
+-- 3. Consultar correos de estudiantes
+SELECT u.nombre, u.correo
+FROM Estudiantes e
+JOIN Usuarios u ON u.id_usuario = e.id_usuario;
+
+-- 4. Tutores con calificación mayor a 80
+SELECT u.nombre, t.calificacion_promedio
+FROM Tutores t
+JOIN Usuarios u ON u.id_usuario = t.id_usuario
+WHERE calificacion_promedio > 80;
+
+-- 5. Materias con su especialidad
+SELECT m.nombre AS materia, e.nombre AS especialidad
+FROM Materias m
+JOIN Especialidades e ON m.id_especialidad = e.id_especialidad;
+
+-- 6. Disponibilidad de un tutor específico
+SELECT u.nombre, d.fecha, d.hora_inicio, d.hora_fin
+FROM Disponibilidades d
+JOIN Tutores t ON d.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+WHERE t.id_tutor = 1;
+
+-- 7. Reservas con sus estudiantes
+SELECT r.id_reserva, u.nombre AS estudiante, r.estado
+FROM Reservas r
+JOIN Estudiantes e ON r.id_estudiante = e.id_estudiante
+JOIN Usuarios u ON u.id_usuario = e.id_usuario;
+
+-- 8. Sesiones realizadas en una fecha
+SELECT *
+FROM Sesiones
+WHERE TRUNC(fecha_inicio) = TRUNC(SYSDATE);
+
+-- 9. Pagos realizados
+SELECT id_pago, monto, fecha_pago
+FROM Pagos
+WHERE estado = 'Pagado';
+
+-- 10. Reseñas de un estudiante
+SELECT r.id_resenia, r.calificacion, r.comentario
+FROM Resenias r
+JOIN Reservas re ON r.id_reserva = re.id_reserva
+JOIN Estudiantes e ON re.id_estudiante = e.id_estudiante
+WHERE e.id_estudiante = 1;
+
+-- 11. Consultar disponibilidad por fecha
+SELECT *
+FROM Disponibilidades
+WHERE fecha = TO_DATE('2025-01-01','YYYY-MM-DD');
+
+-- 12. Materias de una especialidad
+SELECT nombre
+FROM Materias
+WHERE id_especialidad = 1;
+
+-- 13. Buscar usuario por rol
+SELECT nombre, correo
+FROM Usuarios
+WHERE rol = 'Tutor';
+
+-- 14. Reservas confirmadas
+SELECT *
+FROM Reservas
+WHERE estado = 'Confirmada';
+
+-- 15. Sesiones activas
+SELECT *
+FROM Sesiones
+WHERE estado = 'En curso';
+
+-- 16. Pagos pendientes
+SELECT *
+FROM Pagos
+WHERE estado = 'En espera';
+
+-- 17. Consultar tutor por nombre
+SELECT t.id_tutor, u.nombre
+FROM Tutores t
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+WHERE u.nombre LIKE '%a%';
+
+-- 18. Estudiantes por semestre
+SELECT nombre, semestre
+FROM Estudiantes e
+JOIN Usuarios u ON e.id_usuario = u.id_usuario
+WHERE semestre = 3;
+
+-- 19. Disponibilidad activa
+SELECT *
+FROM Disponibilidades
+WHERE estado = 'Disponible';
+
+-- 20. Reseñas con mala calificación
+SELECT *
+FROM Resenias
+WHERE calificacion < 3;
+
+-------------------------------------------------------------
+-- Gerenciales
+-------------------------------------------------------------
+
+-- 1. Número de usuarios por rol
+SELECT rol, COUNT(*) AS total
+FROM Usuarios
+GROUP BY rol;
+
+-- 2. Promedio de calificación de todos los tutores
+SELECT AVG(calificacion_promedio) AS promedio_general
+FROM Tutores;
+
+-- 3. Estadísticas de reservas por estado
+SELECT estado, COUNT(*) AS total
+FROM Reservas
+GROUP BY estado;
+
+-- 4. Total de pagos por mes
+SELECT TO_CHAR(fecha_pago, 'YYYY-MM'), SUM(monto) AS total_pagado
+FROM Pagos
+GROUP BY TO_CHAR(fecha_pago, 'YYYY-MM');
+
+-- 5. Ranking de tutores por calificación
+SELECT u.nombre, t.calificacion_promedio
+FROM Tutores t
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+ORDER BY calificacion_promedio DESC;
+
+-- 6. Cantidad de sesiones realizadas por tutor
+SELECT u.nombre, COUNT(*) AS sesiones_realizadas
+FROM Sesiones s
+JOIN Reservas r ON s.id_reserva = r.id_reserva
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre;
+
+-- 7. Estudiantes que más reservas realizan
+SELECT u.nombre, COUNT(*) AS total_reservas
+FROM Reservas r
+JOIN Estudiantes e ON r.id_estudiante = e.id_estudiante
+JOIN Usuarios u ON e.id_usuario = u.id_usuario
+GROUP BY u.nombre
+ORDER BY total_reservas DESC;
+
+-- 8. Materias más reservadas
+SELECT m.nombre, COUNT(*) AS veces_reservada
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+GROUP BY m.nombre
+ORDER BY veces_reservada DESC;
+
+-- 9. Ingresos totales del sistema
+SELECT SUM(monto) AS ingresos_totales
+FROM Pagos
+WHERE estado = 'Pagado';
+
+-- 10. Ingresos por tutor
+SELECT u.nombre, SUM(p.monto) AS ingresos
+FROM Pagos p
+JOIN Sesiones s ON p.id_sesion = s.id_sesion
+JOIN Reservas r ON s.id_reserva = r.id_reserva
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre;
+
+-- 11. Horas totales impartidas por tutor
+SELECT u.nombre, SUM(EXTRACT(HOUR FROM (fecha_fin - fecha_inicio))) AS horas
+FROM Sesiones s
+JOIN Reservas r ON s.id_reserva = r.id_reserva
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre;
+
+-- 12. Media de tarifa por especialidad
+SELECT e.nombre AS especialidad, AVG(t.tarifa_hora) AS tarifa_promedio
+FROM Tutores t
+JOIN Especialidades e ON e.id_especialidad = e.id_especialidad
+GROUP BY e.nombre;
+
+-- 13. Top 5 tutores más reservados
+SELECT u.nombre, COUNT(*) AS reservas
+FROM Reservas r
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre
+ORDER BY reservas DESC
+FETCH FIRST 5 ROWS ONLY;
+
+-- 14. Mes con más sesiones
+SELECT TO_CHAR(fecha_inicio,'YYYY-MM') AS mes, COUNT(*) AS total
+FROM Sesiones
+GROUP BY TO_CHAR(fecha_inicio,'YYYY-MM')
+ORDER BY total DESC;
+
+-- 15. Promedio de calificación por tutor
+SELECT u.nombre, AVG(r.calificacion) AS promedio_calificacion
+FROM Resenias r
+JOIN Reservas rs ON rs.id_reserva = r.id_reserva
+JOIN Tutores t ON rs.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre;
+
+-- 16. Total de estudiantes por carrera
+SELECT carrera, COUNT(*) AS total
+FROM Estudiantes
+GROUP BY carrera;
+
+-- 17. Semestre promedio de los estudiantes
+SELECT AVG(semestre) AS semestre_promedio
+FROM Estudiantes;
+
+-- 18. Cantidad de reservas por materia y mes
+SELECT m.nombre AS materia, TO_CHAR(r.fecha_reserva,'YYYY-MM') AS mes, COUNT(*) AS cantidad
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+GROUP BY m.nombre, TO_CHAR(r.fecha_reserva,'YYYY-MM');
+
+-- 19. Tutores con más ingresos que el promedio
+SELECT u.nombre, SUM(p.monto) AS total
+FROM Pagos p
+JOIN Sesiones s ON p.id_sesion = s.id_sesion
+JOIN Reservas r ON r.id_reserva = s.id_reserva
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+GROUP BY u.nombre
+HAVING SUM(p.monto) > (
+    SELECT AVG(monto) FROM Pagos WHERE estado='Pagado'
+);
+
+-- 20. Porcentaje de reservas canceladas
+SELECT 
+    (SELECT COUNT(*) FROM Reservas WHERE estado='Cancelada') * 100.0 /
+    (SELECT COUNT(*) FROM Reservas) AS porcentaje_canceladas
+FROM dual;
 
 -------------------------------------------------------------
 --SECCIÓN VERDE: PROCEDIMENTALES Y PRUEBAS
 -------------------------------------------------------------
-
 
 -------------------------------------------------------------
 -- TUPLAS
