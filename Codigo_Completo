@@ -979,15 +979,119 @@ SELECT fn_ganancia_tutor(1) AS GananciaTutor FROM DUAL;
 -- (Comprobación de triggers activos)
 -------------------------------------------------------------
 
--- Insertar nuevo usuario y verificar autoincremento
+-- trg_usuario_autoinc
 
 INSERT INTO Usuario (nombre, correo, contrasena, rol)
-VALUES ('Miguel Ángel', 'miguel@correo.com', 'xyz', 'E');
+VALUES ('Carlos Pérez', 'carlos@uni.edu', '1234', 'Estudiante');
 
--- Eliminar usuario sin reservas (debe funcionar)
+SELECT * FROM Usuario ORDER BY id_usuario DESC;
 
-DELETE FROM Usuario WHERE correo = 'miguel@correo.com';
-COMMIT;
+-- Varios usuarios para ver incremento continuo
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Ana Ríos', 'ana.rios@correo.com', 'pass1', 'Tutor');
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Miguel Torres', 'miguel.t@correo.com', 'pass2', 'Administrador');
+
+SELECT id_usuario, nombre
+FROM Usuario
+ORDER BY id_usuario DESC;
+
+-- ignorando el id
+
+INSERT INTO Usuario (id_usuario, nombre, correo, contrasena, rol)
+VALUES (NULL, 'Laura Molina', 'laura@correo.com', 'claveX', 'Estudiante');
+
+SELECT * FROM Usuario
+WHERE nombre = 'Laura Molina';
+
+
+-- trg_estudiante_autoinc
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Carlos Pérez', 'carlos@uni.edu', '1234', 'Estudiante');
+
+SELECT * FROM Usuario ORDER BY id_usuario DESC;
+
+-- Ingresar 2 estudiantes al mismo tiempo(asegurarse que el id_usuario1 existe)
+
+
+INSERT INTO Estudiante (programa, semestre, id_usuario)
+VALUES ('Derecho', 2, 1);
+
+INSERT INTO Estudiante (programa, semestre, id_usuario)
+VALUES ('Medicina', 1, 1);
+
+SELECT id_estudiante, programa
+FROM Estudiante
+ORDER BY id_estudiante DESC;
+
+-- Valores null
+
+INSERT INTO Estudiante (programa, semestre, id_usuario)
+VALUES ('Arquitectura', 5, (SELECT MIN(id_usuario) FROM Usuario));
+
+SELECT *
+FROM Estudiante
+WHERE programa = 'Arquitectura';
+
+
+-- trg_tutor_autoinc
+
+INSERT INTO Tutor (especialidad, id_usuario)
+VALUES ('Matemáticas', 1); 
+
+SELECT * FROM Tutor ORDER BY id_tutor DESC;
+
+-- Continuidad secuencias
+
+INSERT INTO Tutor (especialidad, id_usuario)
+VALUES ('Física', 1);
+
+INSERT INTO Tutor (especialidad, id_usuario)
+VALUES ('Biología', 1);
+
+SELECT id_tutor, especialidad
+FROM Tutor
+ORDER BY id_tutor DESC;
+
+
+-- Insert usuario diferente
+
+-- Asegúrate de que existan varios usuarios
+INSERT INTO Tutor (especialidad, id_usuario)
+VALUES ('Química', (SELECT MIN(id_usuario) FROM Usuario));
+
+SELECT *
+FROM Tutor
+WHERE especialidad = 'Química';
+
+-- trg_no_borrar_con_reservas
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Juan Gomez', 'juan@correo.com', 'abcd', 'Estudiante');
+
+INSERT INTO Estudiante (programa, semestre, id_usuario)
+VALUES ('Sistemas', 3, (SELECT MAX(id_usuario) FROM Usuario));
+
+INSERT INTO Reserva (id_estudiante, fecha, estado)
+VALUES (
+    (SELECT MAX(id_estudiante) FROM Estudiante),
+    SYSDATE,
+    'Activa'
+);
+
+DELETE FROM Usuario
+WHERE id_usuario = (SELECT MAX(id_usuario) FROM Usuario);
+
+-- trg_no_borrar_con_reservas (si borra)
+
+INSERT INTO Usuario (nombre, correo, contrasena, rol)
+VALUES ('Usuario Sin Reservas', 'libre@correo.com', 'xyz', 'Estudiante');
+
+SELECT MAX(id_usuario) FROM Usuario;
+
 
 -------------------------------------------------------------
 -- DISPARADORESNOOK
@@ -1002,6 +1106,7 @@ DELETE FROM Usuario WHERE id_usuario = 1;
 ALTER TRIGGER trg_validar_tarifa ENABLE;
 INSERT INTO Tutor VALUES (5, 2, 'Experto en programación', 300000, 90);
 ALTER TRIGGER trg_validar_tarifa DISABLE;
+
 
 -------------------------------------------------------------
 -- XDISPARADORES
@@ -1018,3 +1123,26 @@ EXCEPTION
         DBMS_OUTPUT.PUT_LINE('Algunos triggers no existían o ya fueron eliminados.');
 END;
 /
+
+-- ON DELETE CASCADE para Estudiante.id_usuario
+
+ALTER TABLE Estudiante
+ADD CONSTRAINT fk_estudiante_usuario
+FOREIGN KEY (id_usuario)
+REFERENCES Usuario(id_usuario)
+ON DELETE CASCADE;
+
+-- ON DELETE SET NULL para Tutor.id_usuario
+
+ALTER TABLE Curso
+ADD CONSTRAINT fk_curso_tutor
+FOREIGN KEY (id_tutor)
+REFERENCES Tutor(id_tutor)
+ON DELETE SET NULL;
+
+-- Sin acción específica para Estudiante.id_usuario
+
+ALTER TABLE Estudiante
+ADD CONSTRAINT fk_estudiante_usuario
+FOREIGN KEY (id_usuario)
+REFERENCES Usuario(id_usuario);
