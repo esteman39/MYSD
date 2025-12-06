@@ -214,73 +214,106 @@ BEGIN
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
--- 10.000 ESTUDIANTES (usuarios pares)
+-- 10.000 ESTUDIANTES 
 -------------------------------------------------------------
 DECLARE
-    v_id NUMBER := 2; 
+    id_u NUMBER := 2;
 BEGIN
     FOR i IN 1..10000 LOOP
         INSERT INTO ESTUDIANTES (id_estudiante, id_usuario, carrera, semestre)
         VALUES (
             i,
-            v_id,
-            'Carrera ' || MOD(i, 20),
-            MOD(i, 10) + 1
+            id_u,
+            CASE MOD(i, 6)
+                WHEN 0 THEN 'Ingeniería'
+                WHEN 1 THEN 'Economía'
+                WHEN 2 THEN 'Matemáticas'
+                WHEN 3 THEN 'Biología'
+                WHEN 4 THEN 'Administración'
+                ELSE 'Ciencias de Datos'
+            END,
+            MOD(i, 10)+1
         );
-        v_id := v_id + 2;
+        id_u := id_u + 2;
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
--- 10.000 TUTORES (usuarios impares)
+-- 10.000 TUTORES 
 -------------------------------------------------------------
 DECLARE
-    v_id NUMBER := 1;
+    materias_count NUMBER := 30;
+    materia_id NUMBER;
 BEGIN
     FOR i IN 1..10000 LOOP
+        materia_id := MOD(i, materias_count) + 1;
+
         INSERT INTO TUTORES (id_tutor, id_usuario, experiencia, tarifa_hora, calificacion_promedio)
         VALUES (
             i,
-            v_id,
-            'Experiencia ' || i,
-            MOD(i, 50) + 10,
-            MOD(i, 5) * 10
+            (i * 2) - 1,
+            'Tutor experto en ' || materia_id,
+            30 + MOD(i, 20),
+            3 + MOD(i, 3)
         );
-        v_id := v_id + 2;
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 ESPECIALIDADES
 -------------------------------------------------------------
 DECLARE
+    esp_names SYS.ODCIVARCHAR2LIST := SYS.ODCIVARCHAR2LIST(
+        'Matemáticas', 'Física', 'Química', 'Biología', 'Ingeniería',
+        'Economía', 'Programación', 'Finanzas', 'Idiomas', 'Estadística',
+        'Machine Learning', 'Redes', 'Ciberseguridad', 'Educación', 'Arte'
+    );
 BEGIN
-    FOR i IN 1..10000 LOOP
+    FOR i IN 1..50 LOOP
         INSERT INTO ESPECIALIDADES (id_especialidad, nombre, descripcion)
         VALUES (
             i,
-            'Especialidad ' || i,
-            'Descripcion de especialidad ' || i
+            esp_names(MOD(i, esp_names.count)+1),
+            'Especialidad en ' || esp_names(MOD(i, esp_names.count)+1)
         );
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 MATERIAS
 -------------------------------------------------------------
+CREATE OR REPLACE TYPE materia_lista AS TABLE OF VARCHAR2(100);
+/
+
 DECLARE
+    materias materia_lista := materia_lista(
+        'Álgebra Lineal', 'Cálculo I', 'Cálculo II', 'Física Mecánica',
+        'Física Electromagnetismo', 'Química General', 'Biología Celular',
+        'Programación en Python', 'Programación en Java', 'Estructuras de Datos',
+        'Bases de Datos', 'Estadística Básica', 'Probabilidad',
+        'Economía I', 'Macroeconomía', 'Microeconomía',
+        'Machine Learning', 'Análisis de Datos', 'Matemáticas Discretas',
+        'Inglés A1', 'Inglés A2', 'Inglés B1', 'Inglés B2',
+        'Contabilidad', 'Finanzas Básicas', 'Ciberseguridad', 'Redes I',
+        'Redes II', 'Álgebra Abstracta'
+    );
 BEGIN
     FOR i IN 1..10000 LOOP
         INSERT INTO MATERIAS (id_materia, nombre, id_especialidad)
         VALUES (
             i,
-            'Materia ' || i,
-            MOD(i, 10000) + 1
+            materias(MOD(i, materias.count)+1),
+            MOD(i, 50)+1
         );
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 RESERVAS
 -------------------------------------------------------------
@@ -290,15 +323,20 @@ BEGIN
         INSERT INTO RESERVAS (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
         VALUES (
             i,
-            MOD(i, 10000) + 1,
-            MOD(i + 1, 10000) + 1,
-            MOD(i + 2, 10000) + 1,
+            MOD(i, 10000)+1,
+            MOD(i+1, 10000)+1,
+            MOD(i+2, 10000)+1,
             SYSDATE - MOD(i, 365),
-            'Confirmada'
+            CASE
+                WHEN MOD(i, 4)=0 THEN 'Cancelada'
+                WHEN MOD(i, 4)=1 THEN 'Pendiente'
+                ELSE 'Confirmada'
+            END
         );
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 SESIONES
 -------------------------------------------------------------
@@ -308,14 +346,19 @@ BEGIN
         INSERT INTO SESIONES (id_sesion, id_reserva, fecha_inicio, fecha_fin, estado)
         VALUES (
             i,
-            MOD(i, 10000) + 1,
+            i,
             SYSDATE - MOD(i, 365),
-            SYSDATE - MOD(i, 365) + 1/24,
-            'Finalizada'
+            SYSDATE - MOD(i, 365) + (1/24),
+            CASE
+                WHEN MOD(i, 3)=0 THEN 'Finalizada'
+                WHEN MOD(i, 3)=1 THEN 'En curso'
+                ELSE 'Pendiente'
+            END
         );
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 PAGOS
 -------------------------------------------------------------
@@ -325,14 +368,15 @@ BEGIN
         INSERT INTO PAGOS (id_pago, id_sesion, monto, fecha_pago, estado)
         VALUES (
             i,
-            MOD(i, 10000) + 1,
-            MOD(i, 100) + 20,
+            i,
+            20 + MOD(i, 80),
             SYSDATE - MOD(i, 365),
             'Pagado'
         );
     END LOOP;
 END;
 /
+
 -------------------------------------------------------------
 -- 10.000 RESEÑAS
 -------------------------------------------------------------
@@ -342,14 +386,55 @@ BEGIN
         INSERT INTO RESENIAS (id_resenia, id_reserva, calificacion, comentario, fecha_resenia)
         VALUES (
             i,
-            MOD(i, 10000) + 1,
-            MOD(i, 5) + 1,
-            'Comentario ' || i,
+            i,
+            MOD(i, 5)+1,
+            'Comentario del estudiante ' || i,
             SYSDATE - MOD(i, 365)
         );
     END LOOP;
 END;
 /
+
+---------------------------------------------------------------
+-- 10.00 DISPONIBILIDADES
+---------------------------------------------------------------
+DECLARE
+    v_fecha DATE;
+    v_inicio DATE;
+    v_fin DATE;
+BEGIN
+    FOR i IN 1..10000 LOOP
+
+        v_fecha := TRUNC(SYSDATE - DBMS_RANDOM.VALUE(1, 365));
+
+        v_inicio := v_fecha + (8 + TRUNC(DBMS_RANDOM.VALUE(0, 10))) / 24;
+
+        v_fin := v_inicio + (2/24);
+
+        INSERT INTO Disponibilidades (
+            id_disponibilidad,
+            id_tutor,
+            fecha,
+            hora_inicio,
+            hora_fin,
+            estado
+        )
+        VALUES (
+            i,
+            MOD(i, 10000) + 1,  
+            v_fecha,
+            v_inicio,
+            v_fin,
+            CASE 
+                WHEN MOD(i, 5) = 0 THEN 'No disponible'
+                ELSE 'Disponible'
+            END
+        );
+
+    END LOOP;
+END;
+/
+
 
 COMMIT;
 
@@ -731,7 +816,7 @@ JOIN Tutores t ON r.id_tutor = t.id_tutor
 JOIN Usuarios u ON t.id_usuario = u.id_usuario
 GROUP BY u.nombre;
 
--- 11. Horas totales impartidas por tutor
+-- 11. Horas totales impartidas por tutor (no funciona)
 SELECT u.nombre, SUM(EXTRACT(HOUR FROM (fecha_fin - fecha_inicio))) AS horas
 FROM Sesiones s
 JOIN Reservas r ON s.id_reserva = r.id_reserva
@@ -1291,5 +1376,8 @@ JOIN Materias m ON r.id_materia = m.id_materia
 GROUP BY m.nombre;
 
 SPOOL OFF;
+
+
+
 
 
