@@ -129,43 +129,43 @@ ADD CONSTRAINT uq_usuario_correo UNIQUE (correo);
 
 ALTER TABLE Estudiantes
 ADD CONSTRAINT fk_estudiante_usuario FOREIGN KEY (id_usuario)
-REFERENCES Usuario (id_usuario);
+REFERENCES Usuarios (id_usuario);
 
 ALTER TABLE Tutores
 ADD CONSTRAINT fk_tutor_usuario FOREIGN KEY (id_usuario)
-REFERENCES Usuario (id_usuario);
+REFERENCES Usuarios (id_usuario);
 
 ALTER TABLE Disponibilidades
 ADD CONSTRAINT fk_disponibilidad_tutor FOREIGN KEY (id_tutor)
-REFERENCES Tutor (id_tutor);
+REFERENCES Tutores (id_tutor);
 
 ALTER TABLE Materias
 ADD CONSTRAINT fk_materia_especialidad FOREIGN KEY (id_especialidad)
-REFERENCES Especialidad (id_especialidad);
+REFERENCES Especialidades (id_especialidad);
 
 ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_estudiante FOREIGN KEY (id_estudiante)
-REFERENCES Estudiante (id_estudiante);
+REFERENCES Estudiantes (id_estudiante);
 
 ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_tutor FOREIGN KEY (id_tutor)
-REFERENCES Tutor (id_tutor);
+REFERENCES Tutores (id_tutor);
 
 ALTER TABLE Reservas
 ADD CONSTRAINT fk_reserva_materia FOREIGN KEY (id_materia)
-REFERENCES Materia (id_materia);
+REFERENCES Materias (id_materia);
 
 ALTER TABLE Sesiones
 ADD CONSTRAINT fk_sesion_reserva FOREIGN KEY (id_reserva)
-REFERENCES Reserva (id_reserva);
+REFERENCES Reservas (id_reserva);
 
 ALTER TABLE Pagos
 ADD CONSTRAINT fk_pago_sesion FOREIGN KEY (id_sesion)
-REFERENCES Sesion (id_sesion);
+REFERENCES Sesiones (id_sesion);
 
 ALTER TABLE Resenias
 ADD CONSTRAINT fk_resenia_reserva FOREIGN KEY (id_reserva)
-REFERENCES Reserva (id_reserva);
+REFERENCES Reservas (id_reserva);
 
 -- CHECKs
 
@@ -1376,6 +1376,8 @@ JOIN Materias m ON r.id_materia = m.id_materia
 GROUP BY m.nombre;
 
 SPOOL OFF;
+
+
 
 
 
