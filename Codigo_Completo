@@ -1147,4 +1147,149 @@ ADD CONSTRAINT fk_estudiante_usuario
 FOREIGN KEY (id_usuario)
 REFERENCES Usuario(id_usuario);
 
+-------------------------------------------------------------
+-- PRUEBAS DE ACEPTACIÓN (FUNCIONALES)
+-------------------------------------------------------------
+
+-- CONSULTAR TUTORES MEJOR CALIFICADOS (Top 10)
+SELECT *
+FROM (
+    SELECT 
+        u.nombre AS tutor,
+        t.calificacion_promedio,
+        COUNT(s.id_sesion) AS sesiones_realizadas
+    FROM Tutores t
+    JOIN Usuarios u ON u.id_usuario = t.id_usuario
+    JOIN Reservas r ON r.id_tutor = t.id_tutor
+    JOIN Sesiones s ON s.id_reserva = r.id_reserva
+    JOIN Resenias re ON re.id_reserva = r.id_reserva
+    GROUP BY u.nombre, t.calificacion_promedio
+    HAVING COUNT(s.id_sesion) >= 5
+    ORDER BY t.calificacion_promedio DESC, COUNT(s.id_sesion) DESC
+)
+WHERE ROWNUM <= 10;
+
+-- PRUEBA 1: Debe retornar los 10 tutores mejor calificados
+SELECT COUNT(*) AS total_tutores
+FROM (
+    SELECT u.nombre
+    FROM Tutores t
+    JOIN Usuarios u ON t.id_usuario = u.id_usuario
+    JOIN Reservas r ON r.id_tutor = t.id_tutor
+    JOIN Sesiones s ON s.id_reserva = r.id_reserva
+    GROUP BY u.nombre, t.calificacion_promedio
+    HAVING COUNT(*) >= 5
+) WHERE ROWNUM <= 10;
+
+-- PRUEBA 2: Verificar ordenamiento secundario por sesiones
+SELECT *
+FROM (
+    SELECT u.nombre, t.calificacion_promedio, COUNT(*) AS sesiones
+    FROM Tutores t
+    JOIN Usuarios u ON t.id_usuario = u.id_usuario
+    JOIN Reservas r ON r.id_tutor = t.id_tutor
+    JOIN Sesiones s ON s.id_reserva = r.id_reserva
+    GROUP BY u.nombre, t.calificacion_promedio
+) ORDER BY calificacion_promedio DESC, sesiones DESC;
+
+-- PRUEBA 3: Ranking de tutores enseñando "Álgebra Lineal"
+SELECT u.nombre, t.calificacion_promedio, COUNT(*) AS sesiones
+FROM Tutores t
+JOIN Usuarios u ON t.id_usuario = u.id_usuario
+JOIN Reservas r ON r.id_tutor = t.id_tutor
+JOIN Materias m ON m.id_materia = r.id_materia
+JOIN Sesiones s ON s.id_reserva = r.id_reserva
+WHERE m.nombre = 'Álgebra Lineal'
+GROUP BY u.nombre, t.calificacion_promedio
+ORDER BY t.calificacion_promedio DESC;
+
+-- PRUEBA 4: Tutores con menos de 5 sesiones NO deben aparecer
+SELECT COUNT(*)
+FROM (
+    SELECT t.id_tutor
+    FROM Tutores t
+    JOIN Reservas r ON r.id_tutor = t.id_tutor
+    JOIN Sesiones s ON s.id_reserva = r.id_reserva
+    GROUP BY t.id_tutor
+    HAVING COUNT(*) < 5
+)
+WHERE id_tutor IN (
+    /* ranking real */
+    SELECT id_tutor
+    FROM (
+        SELECT t.id_tutor, COUNT(*) AS sesiones
+        FROM Tutores t
+        JOIN Reservas r ON r.id_tutor = t.id_tutor
+        JOIN Sesiones s ON s.id_reserva = r.id_reserva
+        GROUP BY t.id_tutor
+    ) WHERE sesiones >= 5
+);
+
+-- CONSULTAR MATERIAS CON MAYOR DEMANDA
+SELECT m.nombre AS materia,
+       COUNT(*) AS reservas_totales,
+       SUM(CASE WHEN s.estado = 'Finalizada' THEN 1 ELSE 0 END) AS sesiones_completadas,
+       ROUND((SUM(CASE WHEN s.estado = 'Finalizada' THEN 1 ELSE 0 END) / COUNT(*)) * 100,2) AS tasa_conversion,
+       AVG(p.monto) AS precio_promedio,
+       SUM(p.monto) AS ingresos_totales,
+       COUNT(DISTINCT t.id_tutor) AS tutores_activos
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+JOIN Sesiones s ON s.id_reserva = r.id_reserva
+JOIN Pagos p ON p.id_sesion = s.id_sesion
+JOIN Tutores t ON t.id_tutor = r.id_tutor
+GROUP BY m.nombre
+ORDER BY reservas_totales DESC;
+
+-- PRUEBA 1: Debe listar todas las materias ordenadas por número de reservas
+SELECT nombre, reservas
+FROM (
+    SELECT m.nombre, COUNT(*) AS reservas
+    FROM Reservas r
+    JOIN Materias m ON r.id_materia = m.id_materia
+    GROUP BY m.nombre
+    ORDER BY reservas DESC
+);
+
+-- PRUEBA 2: Materias sin reservas deben aparecer con 0
+SELECT m.nombre
+FROM Materias m
+LEFT JOIN Reservas r ON m.id_materia = r.id_materia
+WHERE r.id_reserva IS NULL;
+
+-- PRUEBA 3: Validar cálculo de tasa de conversión por materia
+SELECT m.nombre,
+       COUNT(*) AS reservas,
+       SUM(CASE WHEN s.estado = 'Finalizada' THEN 1 ELSE 0 END) AS finalizadas,
+       ROUND((SUM(CASE WHEN s.estado = 'Finalizada' THEN 1 ELSE 0 END) / COUNT(*)) * 100,2) AS tasa_ok
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+JOIN Sesiones s ON s.id_reserva = r.id_reserva
+GROUP BY m.nombre;
+
+-- PRUEBA 4: Verificar el precio promedio por materia
+SELECT m.nombre, AVG(p.monto) AS precio_promedio
+FROM Pagos p
+JOIN Sesiones s ON p.id_sesion = s.id_sesion
+JOIN Reservas r ON r.id_reserva = s.id_reserva
+JOIN Materias m ON m.id_materia = r.id_materia
+GROUP BY m.nombre;
+
+-- PRUEBA 5: Validar tutores activos por materia
+SELECT m.nombre, COUNT(DISTINCT t.id_tutor) AS tutores_activos
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+JOIN Tutores t ON t.id_tutor = r.id_tutor
+GROUP BY m.nombre;
+
+-- EXPORTAR REPORTE A CSV (puede hacerse por spool)
+SPOOL reporte_materias.csv
+
+SELECT m.nombre, COUNT(*) AS reservas
+FROM Reservas r
+JOIN Materias m ON r.id_materia = m.id_materia
+GROUP BY m.nombre;
+
+SPOOL OFF;
+
 
