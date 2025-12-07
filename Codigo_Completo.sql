@@ -817,17 +817,19 @@ JOIN Usuarios u ON t.id_usuario = u.id_usuario
 GROUP BY u.nombre;
 
 -- 11. Horas totales impartidas por tutor (no funciona)
-SELECT u.nombre, SUM(EXTRACT(HOUR FROM (fecha_fin - fecha_inicio))) AS horas
+SELECT u.nombre,SUM((fecha_fin - fecha_inicio) * 24) AS horas
 FROM Sesiones s
 JOIN Reservas r ON s.id_reserva = r.id_reserva
 JOIN Tutores t ON r.id_tutor = t.id_tutor
 JOIN Usuarios u ON t.id_usuario = u.id_usuario
 GROUP BY u.nombre;
 
+
 -- 12. Media de tarifa por especialidad
 SELECT e.nombre AS especialidad, AVG(t.tarifa_hora) AS tarifa_promedio
-FROM Tutores t
-JOIN Materias m ON r.id_materia = m.id_materia -- cualquier join válido
+FROM Reservas r
+JOIN Tutores t ON r.id_tutor = t.id_tutor
+JOIN Materias m ON r.id_materia = m.id_materia
 JOIN Especialidades e ON m.id_especialidad = e.id_especialidad
 GROUP BY e.nombre;
 
@@ -1014,7 +1016,7 @@ END;
 -- (Inserciones válidas)
 -------------------------------------------------------------
 
-INSERT INTO Usuarios VALUES (3, 'Carlos Ruiz', 'carlos@correo.com', 'abc123', 'E');
+INSERT INTO Usuarios (nombre, correo, contrasena, rol) VALUES ('Carlos Ruiz', 'carlos@correo.com', 'abc123', 'E');
 INSERT INTO Estudiantes VALUES (2, 3, 'Ingeniería Electrónica', 3);
 INSERT INTO Tutores VALUES (2, 2, '5 años de experiencia en física', 80000, 95);
 INSERT INTO Materias VALUES (2, 'Álgebra Lineal', 1);
@@ -1040,7 +1042,6 @@ INSERT INTO Tutores VALUES (3, 2, 'Sin experiencia', -10000, 80);
 -- Intentar insertar una reserva con estado no válido
 
 INSERT INTO Reservas VALUES (3, 1, 1, 1, SYSDATE, 'Pendiente');
-
 
 -------------------------------------------------------------
 -- ACCIONESOK
