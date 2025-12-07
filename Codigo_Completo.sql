@@ -329,7 +329,7 @@ BEGIN
             SYSDATE - MOD(i, 365),
             CASE
                 WHEN MOD(i, 4)=0 THEN 'Cancelada'
-                WHEN MOD(i, 4)=1 THEN 'Pendiente'
+                WHEN MOD(i, 4)=1 THEN 'En espera'
                 ELSE 'Confirmada'
             END
         );
@@ -352,7 +352,7 @@ BEGIN
             CASE
                 WHEN MOD(i, 3)=0 THEN 'Finalizada'
                 WHEN MOD(i, 3)=1 THEN 'En curso'
-                ELSE 'Pendiente'
+                ELSE 'Cancelada'
             END
         );
     END LOOP;
@@ -827,7 +827,8 @@ GROUP BY u.nombre;
 -- 12. Media de tarifa por especialidad
 SELECT e.nombre AS especialidad, AVG(t.tarifa_hora) AS tarifa_promedio
 FROM Tutores t
-JOIN Especialidades e ON e.id_especialidad = e.id_especialidad
+JOIN Materias m ON r.id_materia = m.id_materia -- cualquier join válido
+JOIN Especialidades e ON m.id_especialidad = e.id_especialidad
 GROUP BY e.nombre;
 
 -- 13. Top 5 tutores más reservados
@@ -894,16 +895,16 @@ FROM dual;
 -- TUPLAS
 -------------------------------------------------------------
 
-CREATE SEQUENCE seq_usuario START WITH 3 INCREMENT BY 1;
-CREATE SEQUENCE seq_estudiante START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_tutor START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_disponibilidad START WITH 1 INCREMENT BY 1;
-CREATE SEQUENCE seq_especialidad START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_materia START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_reserva START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_sesion START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_pago START WITH 2 INCREMENT BY 1;
-CREATE SEQUENCE seq_resenia START WITH 2 INCREMENT BY 1;
+CREATE SEQUENCE seq_usuario START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_estudiante START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_tutor START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_disponibilidad START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_especialidad START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_materia START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_reserva START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_sesion START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_pago START WITH 10001 INCREMENT BY 1;
+CREATE SEQUENCE seq_resenia START WITH 10001 INCREMENT BY 1;
 
 
 -------------------------------------------------------------
@@ -919,7 +920,7 @@ CREATE OR REPLACE PROCEDURE sp_registrar_usuario(
     p_rol IN VARCHAR2
 ) AS
 BEGIN
-    INSERT INTO Usuario (id_usuario, nombre, correo, contrasena, rol)
+    INSERT INTO Usuarios (id_usuario, nombre, correo, contrasena, rol)
     VALUES (seq_usuario.NEXTVAL, p_nombre, p_correo, p_contrasena, p_rol);
     COMMIT;
 END;
@@ -933,7 +934,7 @@ CREATE OR REPLACE PROCEDURE sp_crear_reserva(
     p_id_materia IN INT
 ) AS
 BEGIN
-    INSERT INTO Reserva (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
+    INSERT INTO Reservas (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
     VALUES (seq_reserva.NEXTVAL, p_id_estudiante, p_id_tutor, p_id_materia, SYSDATE, 'En espera');
     COMMIT;
 END;
@@ -947,9 +948,9 @@ RETURN NUMBER IS
 BEGIN
     SELECT NVL(SUM(p.monto), 0)
     INTO v_total
-    FROM Pago p
-    JOIN Sesion s ON p.id_sesion = s.id_sesion
-    JOIN Reserva r ON s.id_reserva = r.id_reserva
+    FROM Pagos p
+    JOIN Sesiones s ON p.id_sesion = s.id_sesion
+    JOIN Reservas r ON s.id_reserva = r.id_reserva
     WHERE r.id_tutor = p_id_tutor;
     RETURN v_total;
 END;
@@ -962,7 +963,7 @@ END;
 -- Trigger para asignar ID automático a usuarios
 
 CREATE OR REPLACE TRIGGER trg_usuario_autoinc
-BEFORE INSERT ON Usuario
+BEFORE INSERT ON Usuarios
 FOR EACH ROW
 BEGIN
     :NEW.id_usuario := seq_usuario.NEXTVAL;
@@ -972,7 +973,7 @@ END;
 -- Trigger para asignar ID automático a estudiantes
 
 CREATE OR REPLACE TRIGGER trg_estudiante_autoinc
-BEFORE INSERT ON Estudiante
+BEFORE INSERT ON Estudiantes
 FOR EACH ROW
 BEGIN
     :NEW.id_estudiante := seq_estudiante.NEXTVAL;
@@ -982,7 +983,7 @@ END;
 -- Trigger para asignar ID automático a tutores
 
 CREATE OR REPLACE TRIGGER trg_tutor_autoinc
-BEFORE INSERT ON Tutor
+BEFORE INSERT ON Tutores
 FOR EACH ROW
 BEGIN
     :NEW.id_tutor := seq_tutor.NEXTVAL;
@@ -992,14 +993,14 @@ END;
 -- Trigger que impide eliminar usuarios con reservas activas
 
 CREATE OR REPLACE TRIGGER trg_no_borrar_con_reservas
-BEFORE DELETE ON Usuario
+BEFORE DELETE ON Usuarios
 FOR EACH ROW
 DECLARE
     v_count INT;
 BEGIN
     SELECT COUNT(*) INTO v_count
-    FROM Reserva r
-    JOIN Estudiante e ON r.id_estudiante = e.id_estudiante
+    FROM Reservas r
+    JOIN Estudiantes e ON r.id_estudiante = e.id_estudiante
     WHERE e.id_usuario = :OLD.id_usuario;
 
     IF v_count > 0 THEN
@@ -1013,14 +1014,14 @@ END;
 -- (Inserciones válidas)
 -------------------------------------------------------------
 
-INSERT INTO Usuario VALUES (3, 'Carlos Ruiz', 'carlos@correo.com', 'abc123', 'E');
-INSERT INTO Estudiante VALUES (2, 3, 'Ingeniería Electrónica', 3);
-INSERT INTO Tutor VALUES (2, 2, '5 años de experiencia en física', 80000, 95);
-INSERT INTO Materia VALUES (2, 'Álgebra Lineal', 1);
-INSERT INTO Reserva VALUES (2, 1, 2, 2, SYSDATE, 'En espera');
-INSERT INTO Sesion VALUES (2, 2, SYSDATE, SYSDATE + 1/24, 'Programada');
-INSERT INTO Pago VALUES (2, 2, 80000, SYSDATE, 'Pagado');
-INSERT INTO Resenia VALUES (2, 2, 100, 'Muy buena clase', SYSDATE);
+INSERT INTO Usuarios VALUES (3, 'Carlos Ruiz', 'carlos@correo.com', 'abc123', 'E');
+INSERT INTO Estudiantes VALUES (2, 3, 'Ingeniería Electrónica', 3);
+INSERT INTO Tutores VALUES (2, 2, '5 años de experiencia en física', 80000, 95);
+INSERT INTO Materias VALUES (2, 'Álgebra Lineal', 1);
+INSERT INTO Reservas VALUES (2, 1, 2, 2, SYSDATE, 'En espera');
+INSERT INTO Sesiones VALUES (2, 2, SYSDATE, SYSDATE + 1/24, 'Programada');
+INSERT INTO Pagos VALUES (2, 2, 80000, SYSDATE, 'Pagado');
+INSERT INTO Resenias VALUES (2, 2, 100, 'Muy buena clase', SYSDATE);
 COMMIT;
 
 -------------------------------------------------------------
@@ -1030,15 +1031,15 @@ COMMIT;
 
 -- Intentar insertar un correo duplicado
 
-INSERT INTO Usuario VALUES (4, 'Pedro', 'carlos@correo.com', 'pass', 'E');
+INSERT INTO Usuarios VALUES (4, 'Pedro', 'carlos@correo.com', 'pass', 'E');
 
 -- Intentar insertar un tutor con tarifa negativa
 
-INSERT INTO Tutor VALUES (3, 2, 'Sin experiencia', -10000, 80);
+INSERT INTO Tutores VALUES (3, 2, 'Sin experiencia', -10000, 80);
 
 -- Intentar insertar una reserva con estado no válido
 
-INSERT INTO Reserva VALUES (3, 1, 1, 1, SYSDATE, 'Pendiente');
+INSERT INTO Reservas VALUES (3, 1, 1, 1, SYSDATE, 'Pendiente');
 
 
 -------------------------------------------------------------
@@ -1066,116 +1067,120 @@ SELECT fn_ganancia_tutor(1) AS GananciaTutor FROM DUAL;
 
 -- trg_usuario_autoinc
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (nombre, correo, contrasena, rol)
 VALUES ('Carlos Pérez', 'carlos@uni.edu', '1234', 'Estudiante');
 
-SELECT * FROM Usuario ORDER BY id_usuario DESC;
+SELECT * FROM Usuarios ORDER BY id_usuario DESC;
 
 -- Varios usuarios para ver incremento continuo
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO USUARIOS (nombre, correo, contrasena, rol)
 VALUES ('Ana Ríos', 'ana.rios@correo.com', 'pass1', 'Tutor');
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (nombre, correo, contrasena, rol)
 VALUES ('Miguel Torres', 'miguel.t@correo.com', 'pass2', 'Administrador');
 
 SELECT id_usuario, nombre
-FROM Usuario
+FROM Usuarios
 ORDER BY id_usuario DESC;
 
 -- ignorando el id
 
-INSERT INTO Usuario (id_usuario, nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (id_usuario, nombre, correo, contrasena, rol)
 VALUES (NULL, 'Laura Molina', 'laura@correo.com', 'claveX', 'Estudiante');
 
-SELECT * FROM Usuario
+SELECT * FROM Usuarios
 WHERE nombre = 'Laura Molina';
 
 
 -- trg_estudiante_autoinc
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (nombre, correo, contrasena, rol)
 VALUES ('Carlos Pérez', 'carlos@uni.edu', '1234', 'Estudiante');
 
-SELECT * FROM Usuario ORDER BY id_usuario DESC;
+SELECT * FROM Usuarios ORDER BY id_usuario DESC;
 
 -- Ingresar 2 estudiantes al mismo tiempo(asegurarse que el id_usuario1 existe)
 
+INSERT INTO Estudiantes (id_usuario, carrera, semestre)
+VALUES (2, 'Derecho', 1);
 
-INSERT INTO Estudiante (programa, semestre, id_usuario)
-VALUES ('Derecho', 2, 1);
+INSERT INTO Estudiantes (id_usuario, carrera, semestre)
+VALUES (1, 'Medicina', 1);
 
-INSERT INTO Estudiante (programa, semestre, id_usuario)
-VALUES ('Medicina', 1, 1);
-
-SELECT id_estudiante, programa
-FROM Estudiante
+SELECT id_estudiante, carrera
+FROM Estudiantes
 ORDER BY id_estudiante DESC;
 
 -- Valores null
 
-INSERT INTO Estudiante (programa, semestre, id_usuario)
-VALUES ('Arquitectura', 5, (SELECT MIN(id_usuario) FROM Usuario));
+INSERT INTO Estudiantes (id_usuario, carrera, semestre)
+VALUES ((SELECT MIN(id_usuario) FROM Usuarios), 'Arquitectura', 5);
 
 SELECT *
-FROM Estudiante
-WHERE programa = 'Arquitectura';
+FROM Estudiantes
+WHERE carrera = 'Arquitectura';
 
 
 -- trg_tutor_autoinc
 
-INSERT INTO Tutor (especialidad, id_usuario)
-VALUES ('Matemáticas', 1); 
+INSERT INTO Tutores (experiencia, id_usuario, tarifa_hora, calificacion_promedio)
+VALUES ('Matemáticas', 1, 50, 90);
 
-SELECT * FROM Tutor ORDER BY id_tutor DESC;
+SELECT * FROM Tutores ORDER BY id_tutor DESC;
 
 -- Continuidad secuencias
 
-INSERT INTO Tutor (especialidad, id_usuario)
+INSERT INTO Tutores (experiencia, id_usuario)
 VALUES ('Física', 1);
 
-INSERT INTO Tutor (especialidad, id_usuario)
+INSERT INTO Tutores (experiencia, id_usuario)
 VALUES ('Biología', 1);
 
-SELECT id_tutor, especialidad
-FROM Tutor
+SELECT id_tutor, experiencia
+FROM Tutores
 ORDER BY id_tutor DESC;
 
 
 -- Insert usuario diferente
 
 -- Asegúrate de que existan varios usuarios
-INSERT INTO Tutor (especialidad, id_usuario)
-VALUES ('Química', (SELECT MIN(id_usuario) FROM Usuario));
+INSERT INTO Tutores (experiencia, id_usuario)
+VALUES ('Química', (SELECT MIN(id_usuario) FROM Usuarios));
 
 SELECT *
-FROM Tutor
-WHERE especialidad = 'Química';
+FROM Tutores
+WHERE experiencia = 'Química';
 
 -- trg_no_borrar_con_reservas
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (nombre, correo, contrasena, rol)
 VALUES ('Juan Gomez', 'juan@correo.com', 'abcd', 'Estudiante');
 
-INSERT INTO Estudiante (programa, semestre, id_usuario)
-VALUES ('Sistemas', 3, (SELECT MAX(id_usuario) FROM Usuario));
+INSERT INTO Estudiantes (id_usuario, carrera, semestre)
+VALUES ((SELECT MAX(id_usuario) FROM Usuarios), 'Sistemas', 3);
 
-INSERT INTO Reserva (id_estudiante, fecha, estado)
+
+INSERT INTO Reservas (id_reserva, id_estudiante, id_tutor, id_materia, fecha_reserva, estado)
 VALUES (
-    (SELECT MAX(id_estudiante) FROM Estudiante),
+    seq_reserva.NEXTVAL,
+    (SELECT MAX(id_estudiante) FROM Estudiantes),
+    1,
+    1,
     SYSDATE,
-    'Activa'
+    'Confirmada'
 );
 
-DELETE FROM Usuario
-WHERE id_usuario = (SELECT MAX(id_usuario) FROM Usuario);
+
+DELETE FROM Usuarios
+WHERE id_usuario = (SELECT MAX(id_usuario) FROM Usuarios);
 
 -- trg_no_borrar_con_reservas (si borra)
 
-INSERT INTO Usuario (nombre, correo, contrasena, rol)
+INSERT INTO Usuarios (nombre, correo, contrasena, rol)
 VALUES ('Usuario Sin Reservas', 'libre@correo.com', 'xyz', 'Estudiante');
 
-SELECT MAX(id_usuario) FROM Usuario;
+SELECT MAX(id_usuario) FROM Usuarios;
 
 
 -------------------------------------------------------------
@@ -1184,14 +1189,7 @@ SELECT MAX(id_usuario) FROM Usuario;
 
 -- Intentar eliminar usuario con reservas activas
 
-DELETE FROM Usuario WHERE id_usuario = 1;
-
--- Intentar insertar un tutor con tarifa excesiva (trigger experimental)
-
-ALTER TRIGGER trg_validar_tarifa ENABLE;
-INSERT INTO Tutor VALUES (5, 2, 'Experto en programación', 300000, 90);
-ALTER TRIGGER trg_validar_tarifa DISABLE;
-
+DELETE FROM Usuarios WHERE id_usuario = 1;
 
 -------------------------------------------------------------
 -- XDISPARADORES
@@ -1209,28 +1207,15 @@ EXCEPTION
 END;
 /
 
--- ON DELETE CASCADE para Estudiante.id_usuario
-
-ALTER TABLE Estudiante
-ADD CONSTRAINT fk_estudiante_usuario
-FOREIGN KEY (id_usuario)
-REFERENCES Usuario(id_usuario)
-ON DELETE CASCADE;
 
 -- ON DELETE SET NULL para Tutor.id_usuario
 
-ALTER TABLE Curso
-ADD CONSTRAINT fk_curso_tutor
+ALTER TABLE Reservas
+ADD CONSTRAINT fk_reserva_tutor_on_delete_set_null
 FOREIGN KEY (id_tutor)
-REFERENCES Tutor(id_tutor)
+REFERENCES Tutores(id_tutor)
 ON DELETE SET NULL;
 
--- Sin acción específica para Estudiante.id_usuario
-
-ALTER TABLE Estudiante
-ADD CONSTRAINT fk_estudiante_usuario
-FOREIGN KEY (id_usuario)
-REFERENCES Usuario(id_usuario);
 
 -------------------------------------------------------------
 -- PRUEBAS DE ACEPTACIÓN (FUNCIONALES)
@@ -1366,20 +1351,3 @@ FROM Reservas r
 JOIN Materias m ON r.id_materia = m.id_materia
 JOIN Tutores t ON t.id_tutor = r.id_tutor
 GROUP BY m.nombre;
-
--- EXPORTAR REPORTE A CSV (puede hacerse por spool)
-SPOOL reporte_materias.csv
-
-SELECT m.nombre, COUNT(*) AS reservas
-FROM Reservas r
-JOIN Materias m ON r.id_materia = m.id_materia
-GROUP BY m.nombre;
-
-SPOOL OFF;
-
-
-
-
-
-
-
